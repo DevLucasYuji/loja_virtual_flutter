@@ -1,5 +1,9 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:loja_virtual/datas/product_data.dart';
+import 'package:loja_virtual/tiles/product_tile.dart';
 
 class CategoryScreen extends StatefulWidget {
   final DocumentSnapshot snapshot;
@@ -29,10 +33,46 @@ class _CategoryScreenState extends State<CategoryScreen> {
               ],
             ),
           ),
-          body: TabBarView(children: [
-            Container(color: Colors.green),
-            Container(color: Colors.blue)
-          ]),
+          body: FutureBuilder<QuerySnapshot>(
+            future: Firestore.instance
+                .collection("products")
+                .document(widget.snapshot.documentID)
+                .collection("items")
+                .getDocuments(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData)
+                return Center(
+                  child: CircularProgressIndicator(),
+                );
+              return TabBarView(
+                  physics: NeverScrollableScrollPhysics(),
+                  children: [
+                    GridView.builder(
+                        itemCount: snapshot.data.documents.length,
+                        padding: EdgeInsets.all(4.0),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 4.0,
+                            crossAxisSpacing: 4.0,
+                            childAspectRatio: 0.65),
+                        itemBuilder: (context, index) {
+                          return ProductTile(
+                              "grid",
+                              ProductData.fromDocument(
+                                  snapshot.data.documents[index]));
+                        }),
+                    ListView.builder(
+                        padding: EdgeInsets.all(4.0),
+                        itemCount: snapshot.data.documents.length,
+                        itemBuilder: (context, index) {
+                          return ProductTile(
+                              "list",
+                              ProductData.fromDocument(
+                                  snapshot.data.documents[index]));
+                        })
+                  ]);
+            },
+          ),
         ));
   }
 }
